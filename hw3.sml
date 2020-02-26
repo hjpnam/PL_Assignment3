@@ -75,3 +75,9 @@ fun all_answers foo aList =
                                   | SOME v => f (xs, acc @ v))
     in f (aList, [])
     end
+    
+val count_wildcards = g (fn x => 1) (fn x => 0)
+
+val count_wild_and_variable_lengths = g (fn x => 1) (fn s => String.size s)
+
+fun count_some_var (s, p) = g (fn x => 0) (fn x => if s = x then 1 else 0) p
