@@ -81,3 +81,38 @@ val count_wildcards = g (fn x => 1) (fn x => 0)
 val count_wild_and_variable_lengths = g (fn x => 1) (fn s => String.size s)
 
 fun count_some_var (s, p) = g (fn x => 0) (fn x => if s = x then 1 else 0) p
+
+fun check_pat p =
+    let
+        fun getVars p = 
+            case p of
+                  Variable s => [s]
+                | TupleP ps => List.foldl (fn (p, p') => (getVars p) @ p') [] ps
+                | ConstructorP(_,p) => getVars p
+                | _ => []
+        
+        fun duplicateElExist lst =
+            case lst of
+                  [] => false
+                | x :: xs => (List.exists (fn y => x = y) xs) orelse duplicateElExist xs
+    in
+        not (duplicateElExist (getVars p))
+    end
+
+fun match (v, p) =
+    case (v, p) of
+          (_, Wildcard) => SOME []
+        | (Unit, UnitP) => SOME []
+        | (Const n, ConstP n') => if n = n' then SOME [] else NONE
+        | (_, Variable s) => SOME [(s, v)]
+        | (Constructor (s1, v'), ConstructorP (s2, p')) => if s1 = s2
+                                                           then match (v', p')
+                                                           else NONE
+        | (Tuple vs, TupleP ps) => if List.length vs = List.length ps
+                                   then all_answers match (ListPair.zip (vs, ps))
+                                   else NONE
+        | _ => NONE
+
+fun first_match v ps =
+    SOME (first_answer (fn p => match (v, p)) ps)
+    handle NoAnswer => NONE
